@@ -1,37 +1,31 @@
 package org.acme.quartz.job;
 
 import io.quarkus.arc.Arc;
-import org.acme.quartz.client.ExtensionsResource;
-import org.acme.quartz.dal.repo.ExtensionsRepository;
-import org.acme.quartz.model.dto.ExtensionDto;
-import org.acme.quartz.model.entity.ExtensionsEntity;
+import org.acme.quartz.client.QuotesResource;
+import org.acme.quartz.model.dto.QuoteDto;
 import org.acme.quartz.scheduler.QuartzScheduler;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.transaction.Transactional;
-import java.util.Set;
-import java.util.stream.Collectors;
+import javax.inject.Inject;
+
 
 @ApplicationScoped
 public class UpdateJob implements Job{
+    @Inject
+    QuartzScheduler quartzScheduler;
+    @Inject
+    QuotesResource extensionsResource;
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-            try {
-                ExtensionsResource extensionsResource = Arc.container().instance(ExtensionsResource.class).get();
-                QuartzScheduler quartzScheduler = (QuartzScheduler) context.getJobDetail().getJobDataMap().get("quartzScheduler");
-                Set<ExtensionDto> result = extensionsResource.id("io.quarkus:quarkus-rest-client");
+
+        try {
+                QuoteDto result = extensionsResource.symbol(); //"AAPL","cgc8dshr01qsquh3g6a0cgc8dshr01qsquh3g6ag"
                 quartzScheduler.saveExtension(result);
-//              ExtensionsRepository extensionRepository = Arc.container().instance(ExtensionsRepository.class).get();
-//                System.out.println("Result-->"+result.toString());
-//                extensionRepository.persist(result.stream().map(dto ->
-//                        new ExtensionsEntity(dto.id, dto.name, dto.shortName, dto.keywords)).collect(Collectors.toList()));
             } catch (Exception e) {
-                 System.out.println("eii-->"+e);
+                 System.out.println("Exception -->"+e);
             }
     }
-
-
 }

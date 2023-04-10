@@ -5,51 +5,47 @@ import io.quarkus.runtime.StartupEvent;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
-import javax.inject.Singleton;
+import javax.inject.Inject;
 import javax.transaction.Transactional;
 
-import org.acme.quartz.dal.repo.ExtensionsRepository;
+import org.acme.quartz.dal.repo.QuotesRepository;
 import org.acme.quartz.job.UpdateJob;
-import org.acme.quartz.model.dto.ExtensionDto;
-import org.acme.quartz.model.entity.ExtensionsEntity;
-import org.quartz.JobBuilder;
-import org.quartz.JobDetail;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
-import org.quartz.SimpleScheduleBuilder;
-import org.quartz.Trigger;
-import org.quartz.TriggerBuilder;
-import org.quartz.impl.StdSchedulerFactory;
-
-import java.util.Set;
-import java.util.stream.Collectors;
+import org.acme.quartz.model.dto.QuoteDto;
+import org.acme.quartz.model.entity.QuotesEntity;
+import org.quartz.*;
 
 @ApplicationScoped
 public class QuartzScheduler {
+    @Inject
+    org.quartz.Scheduler quartz;
+
+    @Inject
+    QuotesRepository quotesRepository;
 
     void onStart(@Observes StartupEvent startupEvent) throws SchedulerException {
-        Scheduler scheduler = new StdSchedulerFactory().getScheduler();
         JobDetail jobDetail = JobBuilder.newJob(UpdateJob.class)
                 .withIdentity("ExtJob","ExtJobGroup")
                 .build();
-        jobDetail.getJobDataMap().put("quartzScheduler", this);
 
         Trigger trigger = TriggerBuilder.newTrigger()
                 .withIdentity("ExtJobTrigger","ExtJobGroup")
                 .startNow()
                 .withSchedule(SimpleScheduleBuilder.simpleSchedule()
-                        .withIntervalInMinutes(1)
+                        .withIntervalInSeconds(10)
                         .repeatForever())
                 .build();
-        scheduler.scheduleJob(jobDetail, trigger);
-        scheduler.start();
+        quartz.scheduleJob(jobDetail, trigger);
     }
     @Transactional
-    public void saveExtension(Set<ExtensionDto> extensionDtos) {
-        ExtensionsRepository extensionsRepository = Arc.container().instance(ExtensionsRepository.class).get();
-        Set<ExtensionsEntity> extensionEntities = extensionDtos.stream()
-                .map(dto -> new ExtensionsEntity(dto.name, dto.shortName))//, dto.keywords
-                .collect(Collectors.toSet());
-        extensionsRepository.persistAll(extensionEntities);
+    public void saveExtension(QuoteDto quoteDto) {
+        QuotesEntity quoteEntity = new QuotesEntity();
+        quoteEntity.setC(quoteDto.getC());
+        quoteEntity.setD(quoteDto.getD());
+        quoteEntity.setDp(quoteDto.getDp());
+        quoteEntity.setH(quoteDto.getH());
+        quoteEntity.setL(quoteDto.getL());
+        quoteEntity.setO(quoteDto.getO());
+        quoteEntity.setPc(quoteDto.getPc());
+        quotesRepository.persist(quoteEntity);
     }
 }
